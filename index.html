@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JKS Teacher Email Generator</title>
+    <title>JKS Teacher Portal</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -14,11 +14,11 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
         header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
         
         .email-type-nav { display: flex; flex-wrap: wrap; background: #f5f5f5; border-bottom: 2px solid #ddd; }
-        .nav-btn { flex: 1; min-width: 150px; padding: 15px; background: transparent; border: none; font-size: 0.95em; font-weight: 600; color: #666; cursor: pointer; border-right: 1px solid #ddd; transition: 0.3s; }
+        .nav-btn { flex: 1; min-width: 120px; padding: 15px; background: transparent; border: none; font-size: 0.9em; font-weight: 600; color: #666; cursor: pointer; border-right: 1px solid #ddd; }
         .nav-btn.active { background: white; color: #667eea; border-bottom: 3px solid #667eea; }
         
         main { padding: 30px; }
@@ -29,12 +29,27 @@
         input, select, textarea { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; }
         
         .upload-section { background: #f0f4ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #667eea; }
-        .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; padding: 15px; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; }
-        .student-item { display: flex; align-items: center; padding: 10px; background: white; border: 1px solid #eee; border-radius: 8px; cursor: pointer; }
-        .filter-bar { margin-bottom: 15px; border: 2px solid #667eea; }
         
-        .btn-primary { width: 100%; padding: 18px; background: #667eea; color: white; border: none; border-radius: 10px; font-size: 1.2em; font-weight: 600; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn-primary:hover { background: #5a6fd6; transform: translateY(-2px); }
+        /* List Layout Fixes */
+        .student-list-container { max-height: 450px; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 10px; }
+        .student-item { 
+            display: flex; 
+            align-items: center; 
+            padding: 12px 15px; 
+            background: white; 
+            border: 1px solid #eee; 
+            border-radius: 8px; 
+            margin-bottom: 8px;
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .student-item:hover { background: #f8f9ff; border-color: #667eea; }
+        .student-item input[type="checkbox"] { transform: scale(1.3); margin-right: 15px; pointer-events: none; }
+        
+        .filter-bar { margin-bottom: 5px; border: 2px solid #667eea; }
+        .search-tip { font-size: 0.85em; color: #666; margin-bottom: 15px; display: block; font-style: italic; }
+        
+        .btn-primary { width: 100%; padding: 18px; background: #667eea; color: white; border: none; border-radius: 10px; font-size: 1.2em; font-weight: 600; cursor: pointer; margin-top: 20px; }
         .loading-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); color: white; justify-content: center; align-items: center; z-index: 2000; }
         .loading-overlay.active { display: flex; }
     </style>
@@ -52,7 +67,7 @@
             <button class="nav-btn" data-type="disruption">Disruption</button>
             <button class="nav-btn" data-type="unprepared">Unprepared</button>
             <button class="nav-btn" data-type="absence">Absence</button>
-            <button class="nav-btn" data-type="copybook">Lost Copybook</button>
+            <button class="nav-btn" data-type="copybook">Copybook</button>
             <button class="nav-btn" data-type="reinforcement">Reinforcement</button>
             <button class="nav-btn" data-type="performance">Performance</button>
             <button class="nav-btn" data-type="commendation">Commendation</button>
@@ -60,10 +75,17 @@
 
         <main>
             <div class="upload-section">
-                <h3>Connect Student Data</h3>
+                <h3>Step 1: Connect Student Data</h3>
                 <div style="background: white; padding: 15px; border-radius: 8px; border: 1px dashed #667eea; margin-top: 10px;">
                     <label>Manual Excel Upload</label>
                     <input type="file" id="manual-upload" accept=".xlsx, .xls">
+                </div>
+                <div style="margin-top: 15px; opacity: 0.6;">
+                    <label>OneDrive Sync (Pending IT Approval)</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button disabled style="background:#ccc; padding:10px; border-radius:5px; border:none; color:white; flex:1; cursor:not-allowed;">♂️ Boys Campus</button>
+                        <button disabled style="background:#ccc; padding:10px; border-radius:5px; border:none; color:white; flex:1; cursor:not-allowed;">♀️ Girls Campus</button>
+                    </div>
                 </div>
             </div>
 
@@ -71,8 +93,8 @@
                 <label>Teacher Profile</label>
                 <div style="display: flex; gap: 10px;">
                     <select id="global-title" style="width:100px;"><option>Mr</option><option>Ms</option><option>Mrs</option></select>
-                    <input type="text" id="global-teacher" placeholder="Teacher Full Name">
-                    <input type="text" id="global-subject" placeholder="Subject (e.g. Science)">
+                    <input type="text" id="global-teacher" placeholder="Full Name">
+                    <input type="text" id="global-subject" placeholder="Subject">
                     <select id="global-level"><option>MYP</option><option>DP</option></select>
                 </div>
             </div>
@@ -81,11 +103,12 @@
 
             <div class="form-group" style="margin-top:30px;">
                 <label>Step 2: Select Students</label>
-                <input type="text" class="filter-bar" placeholder="🔍 Search name or homeroom..." onkeyup="filterStudents(this.value)">
-                <div id="student-grid" class="student-grid">Upload classlist to see students...</div>
+                <input type="text" class="filter-bar" placeholder="🔍 Filter list..." id="student-filter">
+                <span class="search-tip">Search by student name or class (e.g., "6.1")</span>
+                <div id="student-grid" class="student-list-container">Upload classlist to begin...</div>
             </div>
 
-            <button class="btn-primary" onclick="triggerGeneration()">Generate ZIP of Letters</button>
+            <button class="btn-primary" onclick="triggerGeneration()">Generate All Selected Letters (.ZIP)</button>
         </main>
     </div>
 
@@ -96,50 +119,19 @@
         let activeType = 'bunking';
 
         const templates = {
-            bunking: {
-                title: 'Bunking Lesson',
-                inputs: [{ id: 'date', label: 'Date', type: 'date' }, { id: 'period', label: 'Period #', type: 'number' }],
-                getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not attend period ${i.period} ${m.subject} lesson on ${formatDate(i.date)}. Please be advised that by choosing to bunk ${s.p} lesson/s, ${s.subj} has put ${s.ref} at risk, because ${s.subj} will not be easily accounted for in any emergency. Additionally, this will undoubtedly lead to gaps in ${s.p} knowledge and understanding... which may impact ${s.p} GPA.`
-            },
-            disruption: {
-                title: 'Disruptive Behaviour',
-                inputs: [],
-                getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class. This disruption is impacting ${s.p} learning and the learning of others. ${s.Subj} has received numerous reminders to focus during class discussions, however, ${s.subj} has chosen to constantly disrupt the class and not respond to guidelines in a respectful manner. [cite: 1, 2, 3, 4, 5, 8, 9, 10]`
-            },
-            unprepared: {
-                title: 'Unprepared for Class',
-                inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, booklet, etc.' }],
-                getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}. This will naturally lead to gaps in your ${s.t}'s knowledge and understanding of the curriculum. [cite: 57, 58, 60, 61]`
-            },
-            absence: {
-                title: 'Frequent Absence',
-                inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }],
-                getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction, which precludes ${s.obj} from receiving adequate feedback. [cite: 12, 13, 15, 16]`
-            },
-            copybook: {
-                title: 'Lost Copybook',
-                inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }],
-                getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions. It appears that your ${s.t} is not fully utilizing the school resources given to him. [cite: 24, 25, 28, 29]`
-            },
-            reinforcement: {
-                title: 'Reinforcement Session',
-                inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }],
-                getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}. [cite: 34, 35, 38, 40]`
-            },
-            performance: {
-                title: 'Academic Performance',
-                inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }],
-                getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}. All grades are accumulative and will negatively affect ${s.p} grade. [cite: 44, 45, 48, 50]`
-            },
-            commendation: {
-                title: 'Commendation',
-                inputs: [],
-                getBody: (s, i, m) => `We are pleased to inform you that ${s.name.split(' ')[0]} has shown a pleasing improvement in ${m.subject}. ${s.P} increased focus and commitment to the subject must be commended.`
-            }
+            bunking: { title: 'Bunking Lesson', inputs: [{ id: 'date', label: 'Date', type: 'date' }, { id: 'period', label: 'Period #', type: 'number' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not attend period ${i.period} ${m.subject} lesson on ${formatDate(i.date)}. By choosing to bunk ${s.p} lesson/s, ${s.subj} has put ${s.ref} at risk...` },
+            disruption: { title: 'Disruptive Behaviour', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class[cite: 2, 8]. This disruption is impacting ${s.p} learning and the learning of others[cite: 3, 9]. We urge you to have a conversation with your ${s.t} regarding this issue, reinforcing that disruptive behavior is not expected from an MYP student[cite: 10].` },
+            unprepared: { title: 'Unprepared for Class', inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, booklet, pen, etc.' }], getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}[cite: 60]. This has the potential to adversely affect ${s.p} grades and GPA[cite: 61].` },
+            absence: { title: 'Frequent Absence', inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class[cite: 15]. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction[cite: 16]. Please be advised that these absences will lead to gaps in your child’s knowledge[cite: 18].` },
+            copybook: { title: 'Lost Copybook', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions[cite: 28]. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school and use it consistently for assessment and feedback[cite: 30].` },
+            reinforcement: { title: 'Reinforcement Session', inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }], getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}[cite: 38]. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}[cite: 40].` },
+            performance: { title: 'Academic Performance', inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}[cite: 48, 49]. Please encourage your child to prepare in advance so as to not affect the end of year grade[cite: 50].` },
+            commendation: { title: 'Commendation', inputs: [], getBody: (s, i, m) => `We are pleased to inform you that ${s.name.split(' ')[0]} has shown a pleasing improvement in ${m.subject}. ${s.P} increased focus and commitment to the subject must be commended.` }
         };
 
-        function initForms() {
+        function init() {
             const container = document.getElementById('forms-container');
+            container.innerHTML = '';
             for (const [id, cfg] of Object.entries(templates)) {
                 const section = document.createElement('section');
                 section.id = `${id}-form`;
@@ -149,20 +141,30 @@
                     inputsHtml += `<div><label>${inp.label}</label><input type="${inp.type}" id="${id}-${inp.id}" placeholder="${inp.placeholder || ''}"></div>`;
                 });
                 inputsHtml += `</div>`;
-                section.innerHTML = `<h2>${cfg.title}</h2>${inputsHtml}`;
+                section.innerHTML = `<h2>${cfg.title} Details</h2>${inputsHtml}`;
                 container.appendChild(section);
             }
+
+            document.getElementById('manual-upload').addEventListener('change', handleUpload);
+            document.getElementById('student-filter').addEventListener('keyup', (e) => filterStudents(e.target.value));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-btn, .form-section').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeType = btn.dataset.type;
+                    document.getElementById(`${activeType}-form`).classList.add('active');
+                });
+            });
         }
 
-        function getDaySuffix(n) { if (n > 3 && n < 21) return 'th'; switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } }
-        function formatDate(dStr) { const d = new Date(dStr); return isNaN(d) ? dStr : `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; }
-
-        function filterStudents(q) {
-            const term = q.toLowerCase();
-            document.querySelectorAll('.student-item').forEach(el => el.style.display = el.textContent.toLowerCase().includes(term) ? 'flex' : 'none');
+        function toggleStudent(el) {
+            const cb = el.querySelector('input');
+            cb.checked = !cb.checked;
+            el.style.borderColor = cb.checked ? '#667eea' : '#eee';
+            el.style.background = cb.checked ? '#f0f4ff' : 'white';
         }
 
-        document.getElementById('manual-upload').addEventListener('change', function(e) {
+        function handleUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById('loading').classList.add('active');
@@ -177,23 +179,33 @@
                 document.getElementById('loading').classList.remove('active');
             };
             reader.readAsArrayBuffer(file);
-        });
+        }
 
         function renderStudents() {
             const grid = document.getElementById('student-grid');
             grid.innerHTML = studentsData.map(s => `
-                <div class="student-item">
+                <div class="student-item" onclick="toggleStudent(this)">
                     <input type="checkbox" id="check-${s.id}" class="student-checkbox" value="${s.id}">
-                    <label for="check-${s.id}" style="margin-left:10px; flex:1;"><strong>${s.name}</strong><br><small>${s.class}</small></label>
+                    <label style="cursor:pointer; flex:1;"><strong>${s.name}</strong> — <small>${s.class}</small></label>
                 </div>`).join('');
         }
+
+        function filterStudents(q) {
+            const term = q.toLowerCase();
+            document.querySelectorAll('.student-item').forEach(el => el.style.display = el.textContent.toLowerCase().includes(term) ? 'flex' : 'none');
+        }
+
+        function getDaySuffix(n) { if (n > 3 && n < 21) return 'th'; switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } }
+        function formatDate(dStr) { const d = new Date(dStr); return isNaN(d) ? dStr : `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; }
 
         async function triggerGeneration() {
             const selectedIds = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(c => c.value);
             if (selectedIds.length === 0) return alert("Select students first.");
             const tName = document.getElementById('global-teacher').value;
             const subject = document.getElementById('global-subject').value;
-            if (!tName || !subject) return alert("Fill teacher name and subject.");
+            const tTitle = document.getElementById('global-title').value;
+            if (!tName || !subject) return alert("Fill profile details.");
+
             document.getElementById('loading').classList.add('active');
             const zip = new JSZip();
             const { jsPDF } = window.jspdf;
@@ -208,14 +220,13 @@
                 const currentInputs = {};
                 templates[activeType].inputs.forEach(inp => currentInputs[inp.id] = document.getElementById(`${activeType}-${inp.id}`).value);
                 const bodyText = templates[activeType].getBody(pMap, currentInputs, { subject });
-                const teacherFull = `${document.getElementById('global-title').value}. ${tName}`;
                 const gradeNum = parseInt(s.class) || 9;
                 const admin = gradeNum <= 8 ? "Mr. Gregory Lewis" : "Mr. Atiq Salakh Uddin";
 
                 doc.setFontSize(12).text(`Date: ${formatDate(new Date())}`, 25, 30);
                 doc.text(`Dear Parent of ${s.name} (${s.class}),`, 25, 50);
                 doc.setFontSize(11).text(doc.splitTextToSize(bodyText, 250), 25, 70);
-                doc.text(teacherFull, 25, 170); doc.text(admin, 180, 170);
+                doc.text(`${tTitle}. ${tName}`, 25, 170); doc.text(admin, 180, 170);
                 zip.file(`${activeType.toUpperCase()}_${s.name}.pdf`, doc.output('blob'));
             }
             const content = await zip.generateAsync({type:'blob'});
@@ -223,16 +234,7 @@
             document.getElementById('loading').classList.remove('active');
         }
 
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.nav-btn, .form-section').forEach(el => el.classList.remove('active'));
-                btn.classList.add('active');
-                activeType = btn.dataset.type;
-                document.getElementById(`${activeType}-form`).classList.add('active');
-            });
-        });
-
-        initForms();
+        init();
     </script>
 </body>
 </html>
