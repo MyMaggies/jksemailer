@@ -29,8 +29,6 @@
         input, select, textarea { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; }
         
         .upload-section { background: #f0f4ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #667eea; }
-        
-        /* Fixed Horizontal List Layout */
         .student-list-container { max-height: 450px; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 10px; }
         
         .student-item { 
@@ -42,11 +40,8 @@
             border-radius: 8px; 
             margin-bottom: 6px;
             cursor: pointer; 
-            transition: 0.2s;
         }
         .student-item:hover { background: #f8f9ff; border-color: #667eea; }
-        
-        /* The Fix: Narrow Checkbox & Clean Alignment */
         .checkbox-container { width: 40px; display: flex; justify-content: center; }
         .student-item input[type="checkbox"] { transform: scale(1.3); pointer-events: none; }
         
@@ -102,8 +97,8 @@
                 <div style="display: flex; gap: 10px;">
                     <select id="global-title" style="width:100px;"><option>Mr</option><option>Ms</option><option>Mrs</option></select>
                     <input type="text" id="global-teacher" placeholder="Full Name">
-                    <input type="text" id="global-subject" placeholder="Subject">
-                    <select id="global-level"><option>MYP</option><option>DP</option></select>
+                    <input type="text" id="global-subject" placeholder="Subject (e.g. English)">
+                    <select id="global-level"><option value="MYP">MYP</option><option value="DP">DP</option><option value="MYP & DP">MYP & DP</option></select>
                 </div>
             </div>
 
@@ -128,10 +123,10 @@
 
         const templates = {
             bunking: { title: 'Bunking Lesson', inputs: [{ id: 'date', label: 'Date', type: 'date' }, { id: 'period', label: 'Period #', type: 'number' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not attend period ${i.period} ${m.subject} lesson on ${formatDate(i.date)}. By choosing to bunk ${s.p} lesson/s, ${s.subj} has put ${s.ref} at risk, because ${s.subj} will not be easily accounted for in any emergency.` },
-            disruption: { title: 'Disruptive Behaviour', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class. This disruption is impacting ${s.p} learning and the learning of others. We urge you to discuss the matter with your ${s.t} regarding this issue.` },
+            disruption: { title: 'Disruptive Behaviour', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class. This disruption is impacting ${s.p} learning and the learning of others. We urge you to discuss the matter with your ${s.t} regarding this issue, reinforcing that disruptive behavior is not what is expected from an MYP student.` },
             unprepared: { title: 'Unprepared for Class', inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, pen, ruler, etc.' }], getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}. This has the potential to adversely affect ${s.p} grades and GPA.` },
             absence: { title: 'Frequent Absence', inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction. Please be advised that these absences will lead to gaps in your child’s knowledge.` },
-            copybook: { title: 'Lost Copybook', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school.` },
+            copybook: { title: 'Lost Copybook', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school and use it consistently for assessment and feedback.` },
             reinforcement: { title: 'Reinforcement Session', inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }], getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}.` },
             performance: { title: 'Academic Performance', inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}. All grades are accumulative and will negatively affect ${s.p} end of year grade.` },
             commendation: { title: 'Commendation', inputs: [], getBody: (s, i, m) => `We are pleased to inform you that ${s.name.split(' ')[0]} has shown a pleasing improvement in ${m.subject}. ${s.P} increased focus and commitment to the subject must be commended.` }
@@ -178,14 +173,12 @@
             document.getElementById('loading').classList.add('active');
             const reader = new FileReader();
             reader.onload = (event) => {
-                try {
-                    const wb = XLSX.read(new Uint8Array(event.target.result), {type:'array'});
-                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    studentsData = json.map((r, i) => ({
-                        id: i, name: r['FULL NAME'] || r.Name || "Unknown", class: String(r.HOMEROOM || r.Class || "N/A"), gender: (r.Gender || 'male').toLowerCase()
-                    }));
-                    renderStudents();
-                } catch(err) { alert("Error parsing file."); }
+                const wb = XLSX.read(new Uint8Array(event.target.result), {type:'array'});
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                studentsData = json.map((r, i) => ({
+                    id: i, name: r['FULL NAME'] || r.Name || "Unknown", class: String(r.HOMEROOM || r.Class || "N/A"), gender: (r.Gender || 'male').toLowerCase()
+                }));
+                renderStudents();
                 document.getElementById('loading').classList.remove('active');
             };
             reader.readAsArrayBuffer(file);
@@ -211,10 +204,7 @@
         }
 
         function getDaySuffix(n) { if (n > 3 && n < 21) return 'th'; switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } }
-        function formatDate(dStr) { 
-            const d = new Date(dStr); 
-            return isNaN(d) ? dStr : `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; 
-        }
+        function formatDate(dStr) { const d = new Date(dStr); return isNaN(d) ? dStr : `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; }
 
         async function triggerGeneration() {
             const selectedIds = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(c => c.value);
@@ -222,15 +212,21 @@
             const tName = document.getElementById('global-teacher').value;
             const subject = document.getElementById('global-subject').value;
             const tTitle = document.getElementById('global-title').value;
+            const tLevel = document.getElementById('global-level').value;
             if (!tName || !subject) return alert("Fill profile details.");
 
             document.getElementById('loading').classList.add('active');
             const zip = new JSZip();
             const { jsPDF } = window.jspdf;
+            
+            // Background Image (Letterhead)
+            const img = new Image();
+            img.src = 'letterhead.png';
+            await new Promise(resolve => img.onload = resolve);
 
             for (const id of selectedIds) {
                 const s = studentsData[id];
-                const doc = new jsPDF('landscape');
+                const doc = new jsPDF('portrait', 'mm', 'a4');
                 const pMap = {
                     name: s.name, t: s.gender === 'female' ? 'daughter' : 'son', p: s.gender === 'female' ? 'her' : 'his', P: s.gender === 'female' ? 'Her' : 'His',
                     subj: s.gender === 'female' ? 'she' : 'he', Subj: s.gender === 'female' ? 'She' : 'He', obj: s.gender === 'female' ? 'her' : 'him', ref: s.gender === 'female' ? 'herself' : 'himself'
@@ -238,13 +234,31 @@
                 const currentInputs = {};
                 templates[activeType].inputs.forEach(inp => currentInputs[inp.id] = document.getElementById(`${activeType}-${inp.id}`).value);
                 const bodyText = templates[activeType].getBody(pMap, currentInputs, { subject });
+                
+                // Add Background
+                doc.addImage(img, 'PNG', 0, 0, 210, 297);
+
+                // Date & Salutation
+                doc.setFontSize(12).text(`Date: ${formatDate(new Date())}`, 25, 60);
+                doc.setFont(undefined, 'bold').text(`Dear Parent of ${s.name} (${s.class}),`, 25, 80);
+                
+                // Body
+                doc.setFont(undefined, 'normal').setFontSize(11);
+                doc.text(doc.splitTextToSize(bodyText, 160), 25, 95);
+
+                // Signature Section
                 const gradeNum = parseInt(s.class) || 9;
                 const admin = gradeNum <= 8 ? "Mr. Gregory Lewis" : "Mr. Atiq Salakh Uddin";
+                const adminTitle = gradeNum <= 8 ? "Head of Boys (Gr 6 - 8)" : "Academic Head (Boys Gr 9 - 12)";
+                const teacherFullTitle = `${tLevel} ${subject} Teacher`;
 
-                doc.setFontSize(12).text(`Date: ${formatDate(new Date())}`, 25, 30);
-                doc.text(`Dear Parent of ${s.name} (${s.class}),`, 25, 50);
-                doc.setFontSize(11).text(doc.splitTextToSize(bodyText, 250), 25, 70);
-                doc.text(`${tTitle}. ${tName}`, 25, 170); doc.text(admin, 180, 170);
+                doc.setFont(undefined, 'bold').text(`${tTitle}. ${tName}`, 25, 230);
+                doc.text(admin, 120, 230);
+                
+                doc.setFont(undefined, 'normal').setFontSize(10);
+                doc.text(teacherFullTitle, 25, 236);
+                doc.text(adminTitle, 120, 236);
+
                 zip.file(`${activeType.toUpperCase()}_${s.name}.pdf`, doc.output('blob'));
             }
             const content = await zip.generateAsync({type:'blob'});
