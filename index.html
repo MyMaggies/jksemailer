@@ -51,10 +51,17 @@
 
         <main>
             <div class="upload-section">
-                <h3>Step 1: Connect Classlist</h3>
-                <p style="margin-bottom: 15px;">Link your school <strong>classlist.xlsx</strong> from OneDrive to select students.</p>
-                <button type="button" class="btn-onedrive" onclick="launchOneDrivePicker()">📂 Link OneDrive Classlist</button>
-            </div>
+    <h3>Step 1: Connect Classlist</h3>
+    <p>Select your campus to open the correct folder automatically:</p>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="button" class="btn-onedrive" onclick="launchOneDrivePicker('boys')" style="background: #005a9e;">
+            ♂️ Boys Campus Folder
+        </button>
+        <button type="button" class="btn-onedrive" onclick="launchOneDrivePicker('girls')" style="background: #d13438;">
+            ♀️ Girls Campus Folder
+        </button>
+    </div>
+</div>
 
             <div class="form-group" style="background: #f9f9f9; padding: 20px; border-radius: 8px;">
                 <label>Teacher Settings (Applied to all letters)</label>
