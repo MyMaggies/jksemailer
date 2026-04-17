@@ -32,24 +32,27 @@
         
         /* Fixed Horizontal List Layout */
         .student-list-container { max-height: 450px; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 10px; }
+        
         .student-item { 
             display: flex; 
             align-items: center; 
-            justify-content: space-between;
-            padding: 12px 20px; 
+            padding: 10px 15px; 
             background: white; 
             border: 1px solid #eee; 
             border-radius: 8px; 
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             cursor: pointer; 
             transition: 0.2s;
         }
         .student-item:hover { background: #f8f9ff; border-color: #667eea; }
-        .student-item input[type="checkbox"] { transform: scale(1.3); pointer-events: none; margin-right: 20px; }
         
-        .student-info-row { display: flex; align-items: center; width: 100%; }
-        .student-name { font-weight: 600; color: #333; flex: 1; }
-        .student-class { color: #666; font-size: 0.9em; text-align: right; min-width: 100px; }
+        /* The Fix: Narrow Checkbox & Clean Alignment */
+        .checkbox-container { width: 40px; display: flex; justify-content: center; }
+        .student-item input[type="checkbox"] { transform: scale(1.3); pointer-events: none; }
+        
+        .student-info-row { display: flex; align-items: center; justify-content: space-between; flex: 1; padding-left: 10px; }
+        .student-name { font-weight: 600; color: #333; font-size: 0.95em; }
+        .student-class { color: #666; font-size: 0.85em; text-align: right; }
         
         .filter-bar { margin-bottom: 5px; border: 2px solid #667eea; }
         .search-tip { font-size: 0.85em; color: #666; margin-bottom: 15px; display: block; font-style: italic; }
@@ -125,12 +128,12 @@
 
         const templates = {
             bunking: { title: 'Bunking Lesson', inputs: [{ id: 'date', label: 'Date', type: 'date' }, { id: 'period', label: 'Period #', type: 'number' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not attend period ${i.period} ${m.subject} lesson on ${formatDate(i.date)}. By choosing to bunk ${s.p} lesson/s, ${s.subj} has put ${s.ref} at risk, because ${s.subj} will not be easily accounted for in any emergency.` },
-            disruption: { title: 'Disruptive Behaviour', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class[cite: 2]. This disruption is impacting ${s.p} learning and the learning of others[cite: 3]. We urge you to discuss the matter with your ${s.t} regarding this issue[cite: 6].` },
-            unprepared: { title: 'Unprepared for Class', inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, pen, ruler, etc.' }], getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}[cite: 60]. This has the potential to adversely affect ${s.p} grades and GPA[cite: 61].` },
-            absence: { title: 'Frequent Absence', inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class[cite: 15]. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction[cite: 15, 16]. Please be advised that these absences will lead to gaps in your child’s knowledge[cite: 18].` },
-            copybook: { title: 'Lost Copybook', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions[cite: 28]. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school[cite: 30].` },
-            reinforcement: { title: 'Reinforcement Session', inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }], getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}[cite: 38]. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}[cite: 40].` },
-            performance: { title: 'Academic Performance', inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}[cite: 48, 49]. All grades are accumulative and will negatively affect ${s.p} end of year grade[cite: 50].` },
+            disruption: { title: 'Disruptive Behaviour', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class. This disruption is impacting ${s.p} learning and the learning of others. We urge you to discuss the matter with your ${s.t} regarding this issue.` },
+            unprepared: { title: 'Unprepared for Class', inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, pen, ruler, etc.' }], getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}. This has the potential to adversely affect ${s.p} grades and GPA.` },
+            absence: { title: 'Frequent Absence', inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction. Please be advised that these absences will lead to gaps in your child’s knowledge.` },
+            copybook: { title: 'Lost Copybook', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school.` },
+            reinforcement: { title: 'Reinforcement Session', inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }], getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}.` },
+            performance: { title: 'Academic Performance', inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}. All grades are accumulative and will negatively affect ${s.p} end of year grade.` },
             commendation: { title: 'Commendation', inputs: [], getBody: (s, i, m) => `We are pleased to inform you that ${s.name.split(' ')[0]} has shown a pleasing improvement in ${m.subject}. ${s.P} increased focus and commitment to the subject must be commended.` }
         };
 
@@ -192,8 +195,10 @@
             const grid = document.getElementById('student-grid');
             grid.innerHTML = studentsData.map(s => `
                 <div class="student-item" onclick="toggleStudent(this)">
-                    <div class="student-info-row">
+                    <div class="checkbox-container">
                         <input type="checkbox" id="check-${s.id}" class="student-checkbox" value="${s.id}">
+                    </div>
+                    <div class="student-info-row">
                         <span class="student-name">${s.name}</span>
                         <span class="student-class">${s.class}</span>
                     </div>
