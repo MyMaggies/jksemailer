@@ -122,37 +122,65 @@
         function formatDate(dStr) { const d = new Date(dStr); return `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; }
 
         function launchOneDrivePicker(campus) {
-            currentCampus = campus;
-            OneDrive.open({
-                clientId: CLIENT_ID, action: "download", multiSelect: false,
-                advanced: {
-                    navigation: {
-                        entryLocation: {
-                            sharePoint: {
-                                sitePath: "https://jeddahknowledge-my.sharepoint.com/personal/f_gomez_jks_edu_sa1/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Ff%5Fgomez%5Fjks%5Fedu%5Fsa1%2FDocuments%2FGRADE%206%2D12%20GIRLS%20%2D%20Complete%20Names&ct=1776431066140&or=OWA%2DNT%2DMail&cid=dbb9f7e2%2Dd4af%2D6065%2Dde88%2D9e674c91418c&ga=1", // Update this
-                                listPath: "Shared Documents",
-                                folderPath: campus === 'boys' ? "IT Rediker/Database2/GRADE 6-12 BOYS" : "IT Rediker/Database2/GRADE 6-12 GIRLS"
-                            }
-                        }
+    currentCampus = campus;
+    
+    // This path must match the folder structure shown in your OneDrive exactly
+    const folderPath = campus === 'boys' 
+        ? "IT Rediker/Database2/GRADE 6-12 BOYS" 
+        : "IT Rediker/Database2/GRADE 6-12 GIRLS";
+
+    const odOptions = {
+        clientId: CLIENT_ID,
+        action: "download",
+        multiSelect: false,
+        advanced: {
+            navigation: {
+                entryLocation: {
+                    // Since it's a 'Personal' OneDrive, we use this structure:
+                    oneDrive: {
+                        folderPath: folderPath
                     }
-                },
-                success: (files) => {
-                    document.getElementById('loading').classList.add('active');
-                    fetch(files.value[0]["@microsoft.graph.downloadUrl"])
-                        .then(r => r.arrayBuffer())
-                        .then(data => {
-                            const wb = XLSX.read(data, {type:'array'});
-                            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                            studentsData = json.map((r, i) => ({
-                                id: i, name: r['FULL NAME'] || r.Name, class: String(r.HOMEROOM || r.Class), 
-                                gender: (r.Gender || (currentCampus === 'boys' ? 'male' : 'female')).toLowerCase()
-                            }));
-                            populateUI();
-                            document.getElementById('loading').classList.remove('active');
-                        });
                 }
-            });
+            }
+        },
+        success: (files) => {
+            document.getElementById('loading').classList.add('active');
+            // This URL is a direct, temporary link to the Excel file
+            const downloadUrl = files.value[0]["@microsoft.graph.downloadUrl"];
+            
+            fetch(downloadUrl)
+                .then(r => r.arrayBuffer())
+                .then(data => {
+                    const wb = XLSX.read(data, {type:'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    
+                    studentsData = json.map((r, i) => ({
+                        id: i, 
+                        name: r['FULL NAME'] || r.Name || "Unknown", 
+                        class: String(r.HOMEROOM || r.Class || "N/A"), 
+                        // Automatically assign gender based on which button they clicked
+                        gender: (r.Gender || (currentCampus === 'boys' ? 'male' : 'female')).toLowerCase()
+                    }));
+                    
+                    populateUI();
+                    document.getElementById('loading').classList.remove('active');
+                    alert(`Successfully loaded ${studentsData.length} students from the ${campus} folder.`);
+                })
+                .catch(err => {
+                    console.error("Fetch error:", err);
+                    document.getElementById('loading').classList.remove('active');
+                    alert("Failed to read the Excel file. Please ensure it is not currently open in another tab.");
+                });
+        },
+        cancel: () => console.log("User closed the picker"),
+        error: (e) => {
+            console.error("OneDrive Picker Error:", e);
+            alert("Microsoft Connection Error. Please check your Client ID and Redirect URI settings.");
         }
+    };
+    
+    OneDrive.open(odOptions);
+}
 
         function populateUI() {
             ['bunking','incomplete','commendation'].forEach(t => {
