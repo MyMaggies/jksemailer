@@ -125,95 +125,162 @@
 
     <script>
         let studentsData = [];
+        let currentCampus = 'boys';
         const CLIENT_ID = "a8a0e97a-dbe2-4549-b6be-b8956432016c";
-        const saveAs = window.saveAs; 
 
-        function getDaySuffix(n) { if (n > 3 && n < 21) return 'th'; switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } }
-        function formatDate(dStr) { const d = new Date(dStr); return `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; }
+        // Helper Functions
+        function getDaySuffix(n) { 
+            if (n > 3 && n < 21) return 'th'; 
+            switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } 
+        }
+        
+        function formatDate(dStr) { 
+            const d = new Date(dStr); 
+            if (isNaN(d.getTime())) return dStr;
+            return `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; 
+        }
 
-        // --- DATA PROCESSING ---
+        // --- DATA PROCESSING (MANUAL UPLOAD) ---
         document.getElementById('manual-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById('loading').classList.add('active');
             const reader = new FileReader();
             reader.onload = function(event) {
-                const wb = XLSX.read(new Uint8Array(event.target.result), {type:'array'});
-                processExcelData(wb);
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const wb = XLSX.read(data, {type:'array'});
+                    processExcelData(wb);
+                } catch (err) {
+                    console.error(err);
+                    alert("Error reading Excel file. Make sure it's a valid .xlsx or .xls file.");
+                    document.getElementById('loading').classList.remove('active');
+                }
             };
             reader.readAsArrayBuffer(file);
         });
 
+        // --- ONEDRIVE PICKER ---
         function launchOneDrivePicker(campus) {
+            currentCampus = campus;
             OneDrive.open({
-                clientId: CLIENT_ID, action: "download", multiSelect: false,
-                advanced: { navigation: { entryLocation: { oneDrive: { folderPath: campus === 'boys' ? "IT Rediker/Database2/GRADE 6-12 BOYS" : "IT Rediker/Database2/GRADE 6-12 GIRLS" } } } } },
+                clientId: CLIENT_ID, 
+                action: "download", 
+                multiSelect: false,
+                advanced: { 
+                    navigation: { 
+                        entryLocation: { 
+                            oneDrive: { 
+                                folderPath: campus === 'boys' ? "IT Rediker/Database2/GRADE 6-12 BOYS" : "IT Rediker/Database2/GRADE 6-12 GIRLS" 
+                            } 
+                        } 
+                    } 
+                },
                 success: (files) => {
                     document.getElementById('loading').classList.add('active');
-                    fetch(files.value[0]["@microsoft.graph.downloadUrl"]).then(r => r.arrayBuffer()).then(data => processExcelData(XLSX.read(data, {type:'array'})));
+                    fetch(files.value[0]["@microsoft.graph.downloadUrl"])
+                        .then(r => r.arrayBuffer())
+                        .then(data => processExcelData(XLSX.read(data, {type:'array'})))
+                        .catch(err => {
+                            console.error(err);
+                            document.getElementById('loading').classList.remove('active');
+                        });
                 }
             });
         }
 
+        // --- CORE DATA PARSER ---
         function processExcelData(wb) {
-            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            studentsData = json.map((r, i) => ({
-                id: i, name: r['FULL NAME'] || r.Name || "Unknown", 
-                class: String(r.HOMEROOM || r.Class || "N/A"), 
-                gender: (r.Gender || 'male').toLowerCase() 
-            }));
-            populateUI();
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            
+            studentsData = json.map((r, i) => {
+                const keys = Object.keys(r);
+                const nameKey = keys.find(k => k.toUpperCase().trim() === "FULL NAME" || k.toUpperCase().trim() === "NAME") || "";
+                const classKey = keys.find(k => k.toUpperCase().trim() === "HOMEROOM" || k.toUpperCase().trim() === "CLASS" || k.toUpperCase().trim() === "GRADE") || "";
+
+                return {
+                    id: i, 
+                    name: r[nameKey] || "Unknown Student", 
+                    class: String(r[classKey] || "N/A"), 
+                    gender: (r.Gender || (currentCampus === 'boys' ? 'male' : 'female')).toLowerCase() 
+                };
+            });
+
+            if (studentsData.length === 0) {
+                alert("No students found. Please check that your Excel has 'Name' and 'Class' columns.");
+            } else {
+                populateUI();
+            }
             document.getElementById('loading').classList.remove('active');
         }
 
         function populateUI() {
             ['bunking','incomplete','commendation'].forEach(t => {
-                document.getElementById(`${t}-list`).innerHTML = studentsData.map(s => `
-                    <div class="student-item">
-                        <input type="checkbox" value="${s.id}" id="${t}-${s.id}" class="${t}-check">
-                        <label for="${t}-${s.id}" style="margin-left:10px; flex:1;">${s.name} <span style="color:#888;">(${s.class})</span></label>
-                    </div>`).join('');
+                const listEl = document.getElementById(`${t}-list`);
+                if (listEl) {
+                    listEl.innerHTML = studentsData.map(s => `
+                        <div class="student-item">
+                            <input type="checkbox" value="${s.id}" id="${t}-${s.id}" class="${t}-check">
+                            <label for="${t}-${s.id}" style="margin-left:10px; flex:1; cursor:pointer;">
+                                ${s.name} <span style="color:#888; font-size:0.9em;">(${s.class})</span>
+                            </label>
+                        </div>`).join('');
+                }
             });
         }
 
         // --- PDF ENGINE ---
         async function generateZIP(type, templateFn) {
             const selected = Array.from(document.querySelectorAll(`.${type}-check:checked`)).map(i => studentsData[i.value]);
-            if (selected.length === 0) return alert("Please select students.");
+            if (selected.length === 0) return alert("Please select students first.");
+            
             document.getElementById('loading').classList.add('active');
             const zip = new JSZip();
             const { jsPDF } = window.jspdf;
 
-            for (const s of selected) {
-                const doc = new jsPDF('landscape');
-                const tTitle = document.getElementById('global-title').value;
-                const tName = document.getElementById('global-teacher').value;
-                const tLevel = document.getElementById('global-level').value;
-                const teacher = `${tTitle}. ${tName}`;
-                const gradeNum = parseInt(s.class.match(/^(\d+)/)?.[1]) || 9;
-                const admin = gradeNum <= 8 ? "Mr. Gregory Lewis" : "Mr. Atiq Salakh Uddin";
-                const adminTitle = gradeNum <= 8 ? "Head of Boys (Grades 6-8)" : "Head of Upper School – Boys (Grades 9-12)";
+            try {
+                for (const s of selected) {
+                    const doc = new jsPDF('landscape');
+                    const tTitle = document.getElementById('global-title').value;
+                    const tName = document.getElementById('global-teacher').value;
+                    const tLevel = document.getElementById('global-level').value;
+                    const teacher = `${tTitle}. ${tName}`;
+                    
+                    const gradeMatch = s.class.match(/^(\d+)/);
+                    const gradeNum = gradeMatch ? parseInt(gradeMatch[1]) : 9;
+                    const admin = gradeNum <= 8 ? "Mr. Gregory Lewis" : "Mr. Atiq Salakh Uddin";
+                    const adminTitle = gradeNum <= 8 ? "Head of Boys (Grades 6-8)" : "Head of Upper School – Boys (Grades 9-12)";
 
-                templateFn(doc, s, teacher, tLevel, admin, adminTitle);
-                zip.file(`${type.toUpperCase()}_${s.name.replace(/\s+/g,'_')}.pdf`, doc.output('blob'));
+                    templateFn(doc, s, teacher, tLevel, admin, adminTitle);
+                    zip.file(`${type.toUpperCase()}_${s.name.replace(/\s+/g,'_')}.pdf`, doc.output('blob'));
+                }
+
+                const content = await zip.generateAsync({type:'blob'});
+                window.saveAs(content, `${type}_letters.zip`);
+            } catch (err) {
+                console.error(err);
+                alert("Error generating PDFs.");
             }
-            saveAs(await zip.generateAsync({type:'blob'}), `${type}_letters.zip`);
             document.getElementById('loading').classList.remove('active');
         }
 
-        // --- TEMPLATE LOGIC ---
+        // --- FORM LISTENERS ---
         document.getElementById('bunking-form-element').addEventListener('submit', e => {
             e.preventDefault();
             generateZIP('bunking', (doc, s, teacher, level, admin, adminTitle) => {
                 const p = s.gender === 'female' ? 'her' : 'his', t = s.gender === 'female' ? 'daughter' : 'son', subj = s.gender === 'female' ? 'she' : 'he', ref = s.gender === 'female' ? 'herself' : 'himself';
                 const subjName = document.getElementById('bunking-subject').value;
+                const period = document.getElementById('bunking-period').value;
+                const dateInc = formatDate(document.getElementById('bunking-date').value);
+
                 doc.setFontSize(12).text(`Date: ${formatDate(new Date())}`, 25, 40);
                 doc.setFont(undefined, 'bold').setFontSize(16).text('Bunking Class', 148, 60, {align:'center'});
                 doc.setFont(undefined, 'normal').setFontSize(12);
-                let body = `Dear Parents of ${s.name} in ${s.class},\n\nGood day to you.\n\nKindly be informed that your ${t} did not attend period ${document.getElementById('bunking-period').value} ${subjName} lesson on ${formatDate(document.getElementById('bunking-date').value)}. Please be advised that by choosing to bunk ${p} lesson/s, ${subj} has put ${ref} at risk, because ${subj} will not be easily accounted for in any emergency. Additionally, this will undoubtedly lead to gaps in ${p} knowledge and understanding in the lesson ${subj} has missed, which may well impact ${p} marks and GPA.`;
+                let body = `Dear Parents of ${s.name} in ${s.class},\n\nGood day to you.\n\nKindly be informed that your ${t} did not attend period ${period} ${subjName} lesson on ${dateInc}. Please be advised that by choosing to bunk ${p} lesson/s, ${subj} has put ${ref} at risk, because ${subj} will not be easily accounted for in any emergency. Additionally, this will undoubtedly lead to gaps in ${p} knowledge and understanding in the lesson ${subj} has missed, which may well impact ${p} marks and GPA.`;
                 doc.text(doc.splitTextToSize(body, 250), 25, 80);
-                doc.text(`${teacher}`, 25, 160); doc.text(admin, 180, 160);
-                doc.setFontSize(10).text(`${level} ${subjName} Teacher`, 25, 168); doc.text(adminTitle, 180, 168);
+                doc.text(`${teacher}`, 25, 170); doc.text(admin, 180, 170);
+                doc.setFontSize(10).text(`${level} ${subjName} Teacher`, 25, 178); doc.text(adminTitle, 180, 178);
             });
         });
 
@@ -222,15 +289,19 @@
             generateZIP('incomplete', (doc, s, teacher, level, admin, adminTitle) => {
                 const p = s.gender === 'female' ? 'her' : 'his', t = s.gender === 'female' ? 'daughter' : 'son', subj = s.gender === 'female' ? 'she' : 'he';
                 const subjName = document.getElementById('inc-subject').value, task = document.getElementById('inc-task').value;
+                const due = formatDate(document.getElementById('inc-due').value);
+                const ext = formatDate(document.getElementById('inc-new').value);
+                const type = document.getElementById('inc-type').value;
+
                 doc.setFontSize(12).text(`Date: ${formatDate(new Date())}`, 25, 40);
                 doc.text(`Dear Parent of ${s.name} in ${s.class},`, 25, 60);
                 doc.text(`Assalmu Aleikum`, 25, 70);
-                let body = document.getElementById('inc-type').value === 'homework' 
-                    ? `Kindly be informed that your ${t} has failed to submit ${p} ${subjName} homework (${task}), which was due ${formatDate(document.getElementById('inc-due').value)}. Please note that ${s.name.split(' ')[0]} will be given an extension till ${formatDate(document.getElementById('inc-new').value)}. If ${subj} fails to submit, the policy will apply.`
-                    : `As a school committed to keeping parents informed, kindly note that your ${t} has failed to complete ${p} ${subjName} cycle ${document.getElementById('inc-cycle').value} classwork (${task}), which was due on ${formatDate(document.getElementById('inc-due').value)}. This will impact results.\n\n${s.name.split(' ')[0]} has until ${formatDate(document.getElementById('inc-new').value)} to submit on Managebac.`;
+                let body = type === 'homework' 
+                    ? `Kindly be informed that your ${t} has failed to submit ${p} ${subjName} homework (${task}), which was due ${due}. Please note that ${s.name.split(' ')[0]} will be given an extension till ${ext}. If ${subj} fails to submit, the policy will apply.`
+                    : `As a school committed to keeping parents informed, kindly note that your ${t} has failed to complete ${p} ${subjName} cycle ${document.getElementById('inc-cycle').value} classwork (${task}), which was due on ${due}. This will impact results.\n\n${s.name.split(' ')[0]} has until ${ext} to submit on Managebac.`;
                 doc.text(doc.splitTextToSize(body, 250), 25, 90);
-                doc.text(`${teacher}`, 25, 160); doc.text(admin, 180, 160);
-                doc.setFontSize(10).text(`${level} ${subjName} Teacher`, 25, 168); doc.text(adminTitle, 180, 168);
+                doc.text(`${teacher}`, 25, 170); doc.text(admin, 180, 170);
+                doc.setFontSize(10).text(`${level} ${subjName} Teacher`, 25, 178); doc.text(adminTitle, 180, 178);
             });
         });
 
@@ -243,12 +314,12 @@
                 doc.setFont(undefined, 'normal').setFontSize(12).text(`Dear Parent of ${s.name} in ${s.class},`, 25, 80);
                 let body = `We are pleased to inform you that ${s.name.split(' ')[0]} has shown a pleasing improvement in ${subjName}. ${p} increased focus and commitment to the subject must be commended. We look forward to helping ${lp} achieve ${lp} maximum potential. Keep up the good work.`;
                 doc.text(doc.splitTextToSize(body, 250), 25, 100);
-                doc.text(`${teacher}`, 25, 160); doc.text(admin, 180, 160);
-                doc.setFontSize(10).text(`${level} ${subjName} Teacher`, 25, 168); doc.text(adminTitle, 180, 168);
+                doc.text(`${teacher}`, 25, 170); doc.text(admin, 180, 170);
+                doc.setFontSize(10).text(`${level} ${subjName} Teacher`, 25, 178); doc.text(adminTitle, 180, 178);
             });
         });
 
-        // Navigation
+        // Navigation logic
         document.querySelectorAll('.nav-btn').forEach(b => {
             b.addEventListener('click', () => {
                 document.querySelectorAll('.nav-btn, .form-section').forEach(x => x.classList.remove('active'));
