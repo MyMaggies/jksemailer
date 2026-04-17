@@ -14,11 +14,11 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
+        .container { max-width: 950px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
         header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
         
         .email-type-nav { display: flex; flex-wrap: wrap; background: #f5f5f5; border-bottom: 2px solid #ddd; }
-        .nav-btn { flex: 1; min-width: 120px; padding: 15px; background: transparent; border: none; font-size: 0.9em; font-weight: 600; color: #666; cursor: pointer; border-right: 1px solid #ddd; }
+        .nav-btn { flex: 1; min-width: 120px; padding: 15px; background: transparent; border: none; font-size: 0.85em; font-weight: 600; color: #666; cursor: pointer; border-right: 1px solid #ddd; transition: 0.2s; }
         .nav-btn.active { background: white; color: #667eea; border-bottom: 3px solid #667eea; }
         
         main { padding: 30px; }
@@ -30,12 +30,12 @@
         
         .upload-section { background: #f0f4ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #667eea; }
         
-        /* Fixed List Layout */
+        /* Fixed Horizontal List Layout */
         .student-list-container { max-height: 450px; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 10px; }
         .student-item { 
             display: flex; 
             align-items: center; 
-            justify-content: space-between; /* This creates the columns */
+            justify-content: space-between;
             padding: 12px 20px; 
             background: white; 
             border: 1px solid #eee; 
@@ -45,11 +45,11 @@
             transition: 0.2s;
         }
         .student-item:hover { background: #f8f9ff; border-color: #667eea; }
-        .student-item input[type="checkbox"] { transform: scale(1.3); pointer-events: none; margin-right: 15px; }
+        .student-item input[type="checkbox"] { transform: scale(1.3); pointer-events: none; margin-right: 20px; }
         
-        .student-info { display: flex; align-items: center; flex: 1; }
-        .student-name { font-weight: 600; color: #333; }
-        .student-class { color: #666; font-size: 0.9em; margin-left: auto; padding-left: 20px; }
+        .student-info-row { display: flex; align-items: center; width: 100%; }
+        .student-name { font-weight: 600; color: #333; flex: 1; }
+        .student-class { color: #666; font-size: 0.9em; text-align: right; min-width: 100px; }
         
         .filter-bar { margin-bottom: 5px; border: 2px solid #667eea; }
         .search-tip { font-size: 0.85em; color: #666; margin-bottom: 15px; display: block; font-style: italic; }
@@ -124,13 +124,13 @@
         let activeType = 'bunking';
 
         const templates = {
-            bunking: { title: 'Bunking Lesson [cite: 1, 15]', inputs: [{ id: 'date', label: 'Date', type: 'date' }, { id: 'period', label: 'Period #', type: 'number' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not attend period ${i.period} ${m.subject} lesson on ${formatDate(i.date)}[cite: 15]. By choosing to bunk ${s.p} lesson/s, ${s.subj} has put ${s.ref} at risk, because ${s.subj} will not be easily accounted for in any emergency[cite: 15]. Additionally, this will lead to gaps in ${s.p} knowledge and understanding... which may impact ${s.p} GPA[cite: 15].` },
-            disruption: { title: 'Disruptive Behaviour [cite: 2, 8, 10]', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class[cite: 2, 8]. This disruption is impacting ${s.p} learning and the learning of others[cite: 3, 9]. We urge you to have a conversation with your ${s.t} regarding this issue, reinforcing that disruptive behavior is not what is expected from an MYP student[cite: 10].` },
-            unprepared: { title: 'Unprepared for Class [cite: 57, 60]', inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, pen, ruler, etc.' }], getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}[cite: 60]. This has the potential to adversely affect ${s.p} grades and GPA[cite: 61].` },
-            absence: { title: 'Frequent Absence [cite: 13, 15]', inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class[cite: 15]. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction[cite: 15, 16]. Please be advised that these absences will lead to gaps in your child’s knowledge[cite: 18].` },
-            copybook: { title: 'Lost Copybook [cite: 25, 28]', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions[cite: 28]. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school and use it consistently for assessment and feedback[cite: 30].` },
-            reinforcement: { title: 'Reinforcement Session [cite: 35, 38]', inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }], getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}[cite: 38]. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}[cite: 40].` },
-            performance: { title: 'Academic Performance [cite: 45, 48]', inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}[cite: 48, 49]. All grades are accumulative and will negatively affect ${s.p} end of year grade[cite: 50].` },
+            bunking: { title: 'Bunking Lesson', inputs: [{ id: 'date', label: 'Date', type: 'date' }, { id: 'period', label: 'Period #', type: 'number' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not attend period ${i.period} ${m.subject} lesson on ${formatDate(i.date)}. By choosing to bunk ${s.p} lesson/s, ${s.subj} has put ${s.ref} at risk, because ${s.subj} will not be easily accounted for in any emergency.` },
+            disruption: { title: 'Disruptive Behaviour', inputs: [], getBody: (s, i, m) => `It is with concern we draw your attention to your ${s.t}’s constant disruption in the ${m.subject} class[cite: 2]. This disruption is impacting ${s.p} learning and the learning of others[cite: 3]. We urge you to discuss the matter with your ${s.t} regarding this issue[cite: 6].` },
+            unprepared: { title: 'Unprepared for Class', inputs: [{ id: 'items', label: 'Missing Equipment', type: 'text', placeholder: 'copybook, pen, ruler, etc.' }], getBody: (s, i, m) => `Kindly be informed that, despite repeated reminders, your ${s.t} has consistently attended ${m.subject} lesson unequipped with the necessary ${i.items}[cite: 60]. This has the potential to adversely affect ${s.p} grades and GPA[cite: 61].` },
+            absence: { title: 'Frequent Absence', inputs: [{ id: 'days', label: 'Days Missed', type: 'number' }, { id: 'quarter', label: 'Quarter', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} has been frequently absent from ${m.subject} class[cite: 15]. Since the start of ${i.quarter}, ${s.subj} has missed ${i.days} days of instruction[cite: 15, 16]. Please be advised that these absences will lead to gaps in your child’s knowledge[cite: 18].` },
+            copybook: { title: 'Lost Copybook', inputs: [{ id: 'count', label: 'Times Lost', type: 'number' }], getBody: (s, i, m) => `Please be advised that your ${s.t} has lost ${s.p} ${m.subject} exercise book on at least ${i.count} separate occasions[cite: 28]. Kindly encourage your ${s.t} to always bring ${s.p} copy book to school[cite: 30].` },
+            reinforcement: { title: 'Reinforcement Session', inputs: [{ id: 'sDate', label: 'Session Date', type: 'date' }, { id: 'fDates', label: 'Future Dates', type: 'text' }], getBody: (s, i, m) => `Kindly note that your ${s.t} failed to attend a pre-scheduled ${m.subject} reinforcement session on ${formatDate(i.sDate)}[cite: 38]. Please encourage your ${s.t} to attend the remaining sessions on ${i.fDates}[cite: 40].` },
+            performance: { title: 'Academic Performance', inputs: [{ id: 'task', label: 'Task Name', type: 'text' }, { id: 'score', label: 'Score', type: 'text' }], getBody: (s, i, m) => `Kindly be informed that your ${s.t} did not perform as expected in the ${i.task} assessment, receiving a score of ${i.score}[cite: 48, 49]. All grades are accumulative and will negatively affect ${s.p} end of year grade[cite: 50].` },
             commendation: { title: 'Commendation', inputs: [], getBody: (s, i, m) => `We are pleased to inform you that ${s.name.split(' ')[0]} has shown a pleasing improvement in ${m.subject}. ${s.P} increased focus and commitment to the subject must be commended.` }
         };
 
@@ -175,12 +175,14 @@
             document.getElementById('loading').classList.add('active');
             const reader = new FileReader();
             reader.onload = (event) => {
-                const wb = XLSX.read(new Uint8Array(event.target.result), {type:'array'});
-                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                studentsData = json.map((r, i) => ({
-                    id: i, name: r['FULL NAME'] || r.Name || "Unknown", class: String(r.HOMEROOM || r.Class || "N/A"), gender: (r.Gender || 'male').toLowerCase()
-                }));
-                renderStudents();
+                try {
+                    const wb = XLSX.read(new Uint8Array(event.target.result), {type:'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    studentsData = json.map((r, i) => ({
+                        id: i, name: r['FULL NAME'] || r.Name || "Unknown", class: String(r.HOMEROOM || r.Class || "N/A"), gender: (r.Gender || 'male').toLowerCase()
+                    }));
+                    renderStudents();
+                } catch(err) { alert("Error parsing file."); }
                 document.getElementById('loading').classList.remove('active');
             };
             reader.readAsArrayBuffer(file);
@@ -190,7 +192,7 @@
             const grid = document.getElementById('student-grid');
             grid.innerHTML = studentsData.map(s => `
                 <div class="student-item" onclick="toggleStudent(this)">
-                    <div class="student-info">
+                    <div class="student-info-row">
                         <input type="checkbox" id="check-${s.id}" class="student-checkbox" value="${s.id}">
                         <span class="student-name">${s.name}</span>
                         <span class="student-class">${s.class}</span>
@@ -204,7 +206,10 @@
         }
 
         function getDaySuffix(n) { if (n > 3 && n < 21) return 'th'; switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } }
-        function formatDate(dStr) { const d = new Date(dStr); return isNaN(d) ? dStr : `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; }
+        function formatDate(dStr) { 
+            const d = new Date(dStr); 
+            return isNaN(d) ? dStr : `${d.getDate()}${getDaySuffix(d.getDate())} ${d.toLocaleDateString('en-US',{month:'long'})}, ${d.getFullYear()}`; 
+        }
 
         async function triggerGeneration() {
             const selectedIds = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(c => c.value);
@@ -222,17 +227,17 @@
                 const s = studentsData[id];
                 const doc = new jsPDF('landscape');
                 const pMap = {
-                    name: s.name, t: s.gender === 'female' ? 'daughter' : 'son'[cite: 15, 36, 58], p: s.gender === 'female' ? 'her' : 'his'[cite: 15, 60], P: s.gender === 'female' ? 'Her' : 'His',
-                    subj: s.gender === 'female' ? 'she' : 'he'[cite: 15, 60], Subj: s.gender === 'female' ? 'She' : 'He', obj: s.gender === 'female' ? 'her' : 'him', ref: s.gender === 'female' ? 'herself' : 'himself'
+                    name: s.name, t: s.gender === 'female' ? 'daughter' : 'son', p: s.gender === 'female' ? 'her' : 'his', P: s.gender === 'female' ? 'Her' : 'His',
+                    subj: s.gender === 'female' ? 'she' : 'he', Subj: s.gender === 'female' ? 'She' : 'He', obj: s.gender === 'female' ? 'her' : 'him', ref: s.gender === 'female' ? 'herself' : 'himself'
                 };
                 const currentInputs = {};
                 templates[activeType].inputs.forEach(inp => currentInputs[inp.id] = document.getElementById(`${activeType}-${inp.id}`).value);
                 const bodyText = templates[activeType].getBody(pMap, currentInputs, { subject });
                 const gradeNum = parseInt(s.class) || 9;
-                const admin = gradeNum <= 8 ? "Mr. Gregory Lewis" [cite: 42] : "Mr. Atiq Salakh Uddin"[cite: 32, 52, 65];
+                const admin = gradeNum <= 8 ? "Mr. Gregory Lewis" : "Mr. Atiq Salakh Uddin";
 
-                doc.setFontSize(12).text(`Date: ${formatDate(new Date())} [cite: 12, 24, 44]`, 25, 30);
-                doc.text(`Dear Parent of ${s.name} (${s.class}), [cite: 14, 26, 46, 58]`, 25, 50);
+                doc.setFontSize(12).text(`Date: ${formatDate(new Date())}`, 25, 30);
+                doc.text(`Dear Parent of ${s.name} (${s.class}),`, 25, 50);
                 doc.setFontSize(11).text(doc.splitTextToSize(bodyText, 250), 25, 70);
                 doc.text(`${tTitle}. ${tName}`, 25, 170); doc.text(admin, 180, 170);
                 zip.file(`${activeType.toUpperCase()}_${s.name}.pdf`, doc.output('blob'));
